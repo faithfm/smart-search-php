@@ -7,9 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 No unreleased changes
 
-## 0.1.0 - yyyy-mm-dd
+## 1.0.0 - 2022-02-27
 
-### Changed
+### Added
 
-* XXX
-
+* Created repo as new composer package from standalone class source file.
