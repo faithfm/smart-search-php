@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Libraries;
+namespace Miking7\SmartSearch;
 
 use stdClass;
 use Closure;
 use Exception;
 
-class SmartSearchFilter
+class SmartSearch
 {
     /**
      * The search pattern
@@ -70,7 +70,7 @@ class SmartSearchFilter
 
 
     /**
-     * Create SmartSearchFilter
+     * Create SmartSearch
      *
      * @param  mixed         $defaultFields
      * @param  mixed         $allowedFields     (empty-string value implies $allowedFields=$defaultFields)
