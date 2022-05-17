@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 No unreleased changes
 
+## 1.3.0 - 2022-05-17
+
+### Added basic usage example documentation
+
 ## 1.2.0 - 2022-05-17
 
 ### Added filtering for arrays and Collections
