@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 No unreleased changes
 
+## 1.1.0 - 2022-05-17
+
+### Added
+
+* getBuilderFilter()... to support filtering with Laravel Query Builder.
+
 ## 1.0.0 - 2022-02-27
 
 ### Added

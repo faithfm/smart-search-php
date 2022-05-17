@@ -301,6 +301,7 @@ class SmartSearch
         $sqlEscapeStringFn = $this->sqlEscapeStringFn;  // local reference
         $fn = array_shift($filter_operations_array);
         $params = $filter_operations_array;
+
         $fns = [
             'AND' => function($params) {
                 $paramsDescriptions = array_map(
@@ -342,6 +343,71 @@ class SmartSearch
                     $fields
                 );
                 return join(' OR ', $fstrings);
+            },
+            'default' => function() {
+                die("INVALID CODE");
+            }
+        ];
+        return ($fns[$fn] ?? $fns['default'])($params);  // call the appropriate mapped function
+    }
+
+
+    /**
+     * Return a Laravel Query Builder closure based on filterOpsArray
+     *
+     * @var string|null $filter_operations_array    (not normally specified except when called recursively)
+     * @return closure
+     */
+    public function getBuilderFilter($filter_operations_array = null) {
+        # This function is called recursively.  Start with $this->filterOpsArray if null
+        if (is_null($filter_operations_array))
+            $filter_operations_array = $this->filterOpsArray;
+
+        $fn = array_shift($filter_operations_array);
+        $params = $filter_operations_array;
+
+        $fns = [
+            'AND' => function($params) {
+                $closure = function ($query) use ($params) {
+                    foreach ($params as $param)
+                        $query->where($this->getBuilderFilter($param));
+                };
+                return $closure;
+            },
+            'OR' => function($params) {
+                $closure = function ($query) use ($params) {
+                    foreach ($params as $param)
+                        $query->orWhere($this->getBuilderFilter($param));
+                };
+                return $closure;
+            },
+            'NOT' => function($params) {
+                $param = $params[0];
+                $closure = function ($query) use ($param) {
+                    $query->whereNot($this->getBuilderFilter($param));
+                };
+                return $closure;
+            },
+            'MATCH' => function($params) {
+                [$fields, $glob] = $params;
+
+                // if no wildcards in search term, assume we're searching for the term anywhere in the field
+                if (!static::strContains($glob, ['*', '?']))
+                    $glob = "*$glob*";
+
+                // replace generic wildcards (ie: */?) with sql-specific ones (ie: %/_)
+                $glob = str_replace('*', $this->options->sqlWildcard,           $glob);
+                $glob = str_replace('?', $this->options->sqlWildcardSingleChar, $glob);
+
+                // apply field constraints
+                $closure = function ($query) use ($fields, $glob) {
+                    $query->where(function ($query) use ($fields, $glob) {
+                        foreach ($fields as $field)
+                            $query->orWhere($field, 'like', $glob);
+                    });
+                };
+
+                return $closure;
             },
             'default' => function() {
                 die("INVALID CODE");
