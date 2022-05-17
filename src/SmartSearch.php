@@ -418,6 +418,93 @@ class SmartSearch
 
 
     /**
+     * Return a filtered array (test each item against filterOpsArray)
+     *
+     * @var array $items
+     * @return closure
+     */
+    function filterArray($items) {
+        return array_filter($items, function ($item) {
+            return $this->testItem($item);
+        });
+    }
+
+    /**
+     * Return a filtered Laravel Collection (test each item against filterOpsArray)
+     *
+     * @var Collection $items
+     * @return closure
+     */
+    function filterCollection($items) {
+        return $items->filter(function ($item) {
+            return $this->testItem($item);
+        });
+    }
+
+    /**
+     * Return true if item tests correctly against the filterOpsArray
+     *
+     * @var mixed $item
+     * @var string|null $filter_operations_array    (not normally specified except when called recursively)
+     * @return closure
+     */
+    public function testItem($item, $filter_operations_array = null) {
+        # This function is called recursively.  Start with $this->filterOpsArray if null
+        if (is_null($filter_operations_array))
+            $filter_operations_array = $this->filterOpsArray;
+
+        $fn = array_shift($filter_operations_array);
+        $params = $filter_operations_array;
+
+        $fns = [
+            'AND' => function($params) use ($item) {
+                foreach ($params as $param) {
+                    if ($this->testItem($item, $param) <> true)
+                        return false;   // test fails if ANY sub-operations fail
+                }
+                return true;            // test succeeds if ALL sub-operations fail
+            },
+            'OR' => function($params) use ($item) {
+                foreach ($params as $param) {
+                    if ($this->testItem($item, $param) == true)
+                        return true;   // test succeeds if ANY sub-operations succeed
+                }
+                return false;          // test fails if NONE of the sub-operations succeed
+            },
+            'NOT' => function($params) use ($item) {
+                $param = $params[0];
+                return !$this->testItem($item, $param);     // invert results of sub-operation
+            },
+            'MATCH' => function($params) use ($item) {
+                [$fields, $glob] = $params;
+
+                // if no wildcards in search term, assume we're searching for the term anywhere in the field
+                if (!static::strContains($glob, ['*', '?']))
+                    $glob = "*$glob*";
+
+                $reString = preg_replace('/[-\\^$+.()|[\]{}]/', '\\$&', $glob); // escape all regex special characters - except for '*' and '?'.  Ref: https://stackoverflow.com/questions/3561493/is-there-a-regexp-escape-function-in-javascript/3561711
+                if (static::endsWith($reString, '*'))
+                  $reString = '^' . $reString;                            // special search with "wildcard at end of word/phrase" requires the field to **start with** (vs **contain**) the specified search string.
+                $reString = preg_replace('/\*/', '.*', $reString);       // convert glob '*' to regex ".*"
+                $reString = preg_replace('/\?/', '.', $reString);        // convert glob '?' to regex "."
+                foreach ($fields as $field) {
+                    $t = "/$reString/i";
+                    if (preg_match("/$reString/i", $item[$field]))
+                        return true;   // test succeeds if ANY sub-operations succeed
+                }
+                return false;          // test fails if NONE of the sub-operations succeed
+            },
+            'default' => function() {
+                die("INVALID CODE");
+            }
+        ];
+        return ($fns[$fn] ?? $fns['default'])($params);  // call the appropriate mapped function
+      }
+
+
+
+
+    /**
      * Split text into lines and add 2x spaces to the beginning of each line
      *
      * @var string $text
@@ -445,6 +532,27 @@ class SmartSearch
     {
         foreach ((array) $needles as $needle) {
             if ($needle !== '' && mb_strpos($haystack, $needle) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Determine if a given string ends with a given substring.
+     *
+     * @param  string  $haystack
+     * @param  string|string[]  $needles
+     * @return bool
+     */
+    protected static function endsWith($haystack, $needles)
+    {
+        foreach ((array) $needles as $needle) {
+            if (
+                $needle !== '' && $needle !== null
+                && substr($haystack, -strlen($needle)) === (string) $needle
+            ) {
                 return true;
             }
         }
