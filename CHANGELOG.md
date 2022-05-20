@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 No unreleased changes
 
+## 1.4.0 - 2022-05-20
+
+### Added two Laravel traits
+
+* `SmartSearchable` trait for Laravel Models
+* `SmartSearchableNovaResource` trait for Laravel Nova Resources
+
 ## 1.3.0 - 2022-05-17
 
 ### Added basic usage example documentation

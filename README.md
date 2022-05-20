@@ -106,3 +106,75 @@ $filtered = $smartSearch->filterArray($items));
 $cItems = collect($items);
 $cFiltered = $smartSearch->filterCollection($cItems));
 ```
+
+## Laravel Models
+
+Laravel models can be made made "Smart Searchable" by adding the *SmartSearchable* trait:
+
+```php
+# In your model...
+
+use Miking7\SmartSearch\SmartSearchable;
+
+class MyModel extends Model
+{
+    use SmartSearchable;
+    ...
+}
+```
+
+Your model can now be searched like this:
+
+```php
+MyModel()::smartSearch('joe', 'location|type')->get();
+# OR
+MyModel()::smartSearch('joe', ['location', 'type'])->get();
+```
+
+Extra attributes can be defined to provide defaults, and to allow greater control:
+
+```php
+class MyModel extends Model
+{
+    use SmartSearchable;
+
+    // DEFAULT attributes to be searched
+    protected $smartSearchableInclude = ['location', 'type'];
+
+    // ALLOWED attributes to be searched
+    protected $smartSearchableAllow =   ['asset_id', 'location', 'type'];
+
+    ...
+}
+```
+
+Your model can now be searched like this:
+
+```php
+MyModel()::smartSearch('joe')->get();
+```
+
+## Laravel Valet Resources
+
+The default search functionality for Laravel Nova resources can be augmented with SmartSearch capabilities by simply adding the `SmartSearchableNovaResource` trait to your resource:
+
+```php
+# In your Nova Resource...
+
+use Miking7\SmartSearch\SmartSearchableNovaResource;
+
+class MyResource extends Resource
+{
+    use SmartSearchableNovaResource;
+    ...
+}
+```
+
+The only requirement is that `SmartSearchable` trait has been added to the underlying Model.
+
+This trait automatically uses the Nova Resource's `$search` attribute column definitions, however these can 
+be ignored in favour of those defined by the underlying model's `$smartSearchableInclude` attribute by setting:
+
+```php
+    protected static $smartSearchableIgnoreNovalSearchColumns = true;
+```
