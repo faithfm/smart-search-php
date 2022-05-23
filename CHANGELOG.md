@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 No unreleased changes
 
+## 1.4.2 - 2022-05-23
+
+### Corrected documentation typos
+
 ## 1.4.0 - 2022-05-20
 
 ### Added two Laravel traits

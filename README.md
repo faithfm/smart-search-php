@@ -46,7 +46,7 @@ composer require protonemedia/laravel-eloquent-where-not
 The examples below demonstrate:
 
 * How to initialise the filter class
-* Debug info - showing  a description of the filter operations
+* Debug info - show any parsing errors, and a description of the filter operations
 * `getSqlFilter()` - SQL where-clause-based database filtering
 * `getBuilderFilter` - Laravel Builder-based database filtering
 * `filterArray()` - array-based filtering
