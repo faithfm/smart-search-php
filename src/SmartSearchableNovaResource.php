@@ -27,10 +27,18 @@ trait SmartSearchableNovaResource
      */
     protected static function initializeSearch($query, $search, $searchColumns)
     {
-        if (static::$smartSearchableIgnoreNovalSearchColumns)
+        if (static::$smartSearchableIgnoreNovalSearchColumns) {
+            // search using underlying model's $smartSearchableInclude attribute
             return $query->smartSearch($search);
-        else
+        } else {
+            // First: convert any instances of Nova's special "Columns" instance back to field names (string)
+            foreach ($searchColumns as &$searchColumn) {
+                if ($searchColumn instanceof Column)
+                    $searchColumn = $searchColumn->column;
+            }
+            // ...now search using the Nova Resource's $search attribute columns
             return $query->smartSearch($search, $searchColumns);
+        }
     }
 
 }
