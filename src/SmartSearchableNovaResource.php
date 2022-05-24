@@ -1,6 +1,7 @@
 <?php
 
 namespace Miking7\SmartSearch;
+use Laravel\Nova\Query\Search\Column;
 
 /**
  * This trait allows a Laravel Nova Resource to be SmartSearchable

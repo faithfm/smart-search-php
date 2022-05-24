@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 No unreleased changes
 
+## 1.5.1 - 2022-05-24
+
+### Bug-fix missing "use"
+
 ## 1.5 - 2022-05-24
 
 ### Bug-fix to correctly handle Nova's special "Columns" instances (in list of searchable columns).
