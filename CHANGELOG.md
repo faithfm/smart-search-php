@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 No unreleased changes
 
+## 1.5.2 - 2022-05-31
+
+### Bug-fix regex replacing special characters (was broken)
+
 ## 1.5.1 - 2022-05-24
 
 ### Bug-fix missing "use"

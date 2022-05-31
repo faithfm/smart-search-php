@@ -482,7 +482,7 @@ class SmartSearch
                 if (!static::strContains($glob, ['*', '?']))
                     $glob = "*$glob*";
 
-                $reString = preg_replace('/[-\\^$+.()|[\]{}]/', '\\$&', $glob); // escape all regex special characters - except for '*' and '?'.  Ref: https://stackoverflow.com/questions/3561493/is-there-a-regexp-escape-function-in-javascript/3561711
+                $reString = preg_replace('/[-\\^$+.()\/|[\]{}]/', '\\\\$0', $glob); // escape all regex special characters - except for '*' and '?'.  Ref: https://stackoverflow.com/questions/3561493/is-there-a-regexp-escape-function-in-javascript/3561711
                 if (static::endsWith($reString, '*'))
                   $reString = '^' . $reString;                            // special search with "wildcard at end of word/phrase" requires the field to **start with** (vs **contain**) the specified search string.
                 $reString = preg_replace('/\*/', '.*', $reString);       // convert glob '*' to regex ".*"
