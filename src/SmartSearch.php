@@ -458,17 +458,27 @@ class SmartSearch
 
         $fns = [
             'AND' => function($params) use ($item) {
+                // result is true when no params exist
+                if (count($params) == 0)
+                    return true;
+                // result is false if ANY item tests false
                 foreach ($params as $param) {
                     if ($this->testItem($item, $param) <> true)
                         return false;   // test fails if ANY sub-operations fail
                 }
+                // result is true since NO items tested false
                 return true;            // test succeeds if ALL sub-operations fail
             },
             'OR' => function($params) use ($item) {
+                // result is true when no params exist
+                if (count($params) == 0)
+                    return true;
+                // result is true if ANY item tests true
                 foreach ($params as $param) {
                     if ($this->testItem($item, $param) == true)
                         return true;   // test succeeds if ANY sub-operations succeed
                 }
+                // result is false since NO items tested true
                 return false;          // test fails if NONE of the sub-operations succeed
             },
             'NOT' => function($params) use ($item) {

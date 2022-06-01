@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 No unreleased changes
 
-## 1.5.3 - 2022-05-31
+## 1.5.4 - 2022-06-01
+
+### Bug-fix result of "AND"/"OR" tests should be true when 0 parameters given
+
+## 1.5.3 - 2022-06-01
 
 ### Bug-fix return-types for array+collection filter functions (in their DocBlocks)
 
