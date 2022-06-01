@@ -421,7 +421,7 @@ class SmartSearch
      * Return a filtered array (test each item against filterOpsArray)
      *
      * @var array $items
-     * @return closure
+     * @return array
      */
     function filterArray($items) {
         return array_filter($items, function ($item) {
@@ -433,7 +433,7 @@ class SmartSearch
      * Return a filtered Laravel Collection (test each item against filterOpsArray)
      *
      * @var Collection $items
-     * @return closure
+     * @return Collection
      */
     function filterCollection($items) {
         return $items->filter(function ($item) {
