@@ -1,6 +1,6 @@
 <?php
 
-namespace Miking7\SmartSearch;
+namespace FaithFM\SmartSearch;
 use Laravel\Nova\Query\Search\Column;
 
 /**

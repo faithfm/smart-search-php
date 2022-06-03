@@ -1,8 +1,8 @@
 <?php
 
-namespace Miking7\SmartSearch;
+namespace FaithFM\SmartSearch;
 
-use Miking7\SmartSearch\SmartSearch;
+use FaithFM\SmartSearch\SmartSearch;
 
 /**
  * This trait allows a Laravel Model to be SmartSearchable

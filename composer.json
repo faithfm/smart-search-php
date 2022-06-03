@@ -1,8 +1,8 @@
 {
-    "name": "miking7/smart-search-php",
+    "name": "faithfm/smart-search-php",
     "description": "Search/filter using simple Google-style search strings to perform complex filter operations.",
     "type": "library",
-    "homepage": "https://github.com/miking7/smart-search-php",
+    "homepage": "https://github.com/faithfm/smart-search-php",
     "keywords": [
         "template",
         "composer",
@@ -19,7 +19,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Miking7\\SmartSearch\\": "src/"
+            "FaithFM\\SmartSearch\\": "src/"
         }
     }
 }

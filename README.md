@@ -12,14 +12,14 @@ Add this library to your project's `composer.json` file:
 {
     "require": {
         ...
-        "miking7/smart-search-php": "^1.0"
+        "faithfm/smart-search-php": "^1.0"
     }
     ...
 
     "repositories": {
         "smart-search-php": {
             "type": "vcs",
-            "url": "https://github.com/miking7/smart-search-php"
+            "url": "https://github.com/faithfm/smart-search-php"
         }
     }
 }
@@ -28,7 +28,7 @@ Add this library to your project's `composer.json` file:
 ...then install using the following commands:
 
 ```bash
-composer update miking7/smart-search-php
+composer update faithfm/smart-search-php
 ```
 
 ## Support for whereNot():
@@ -54,7 +54,7 @@ The examples below demonstrate:
 
 Examples:
 ```php
-use Miking7\SmartSearch\SmartSearch;
+use FaithFM\SmartSearch\SmartSearch;
 
 # Sample search string:
 $searchPhrase = 'tags:connecting series:"tassie encounters" -health';
@@ -114,7 +114,7 @@ Laravel models can be made made "Smart Searchable" by adding the *SmartSearchabl
 ```php
 # In your model...
 
-use Miking7\SmartSearch\SmartSearchable;
+use FaithFM\SmartSearch\SmartSearchable;
 
 class MyModel extends Model
 {
@@ -161,7 +161,7 @@ The default search functionality for Laravel Nova resources can be augmented wit
 ```php
 # In your Nova Resource...
 
-use Miking7\SmartSearch\SmartSearchableNovaResource;
+use FaithFM\SmartSearch\SmartSearchableNovaResource;
 
 class MyResource extends Resource
 {
