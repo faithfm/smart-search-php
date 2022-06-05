@@ -43,8 +43,7 @@ trait SmartSearchable
     {
         $includeAttribs = $includeAttribs ?? $this->smartSearchableInclude;
         $allowedAttribs = $allowedAttribs ?? $this->smartSearchableAllow;
-        $smartSearch = new SmartSearch($includeAttribs, $allowedAttribs, $options);
-        $smartSearch->parse($search);
+        $smartSearch = new SmartSearch($search, $includeAttribs, $allowedAttribs, $options);
         return $query->where($smartSearch->getBuilderFilter());
     }
 

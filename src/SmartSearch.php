@@ -56,7 +56,7 @@ class SmartSearch
      * @var array
      */
     const DEFAULT_OPTIONS = [
-        'caseSensitive' => false,
+        'caseSensitive' => false,       // Note: all filters are currently case-insensitive.  Enabling this option does not currently work.
         'sqlWildcard' => '%',
         'sqlWildcardSingleChar' => '_',
     ];
@@ -72,34 +72,32 @@ class SmartSearch
     /**
      * Create SmartSearch
      *
+     * @param  string        $searchString
      * @param  mixed         $defaultFields
      * @param  mixed         $allowedFields     (empty-string value implies $allowedFields=$defaultFields)
      * @param array|stdClass $options
-     * @param Closure $sqlEscapeStringFn
+     * @param Closure        $sqlEscapeStringFn
      * @return void
      */
-    public function __construct($defaultFields = "", $allowedFields = "", $options = [], Closure $sqlEscapeStringFn = null)
+    public function __construct($searchString, $defaultFields = "", $allowedFields = "", $options = [], Closure $sqlEscapeStringFn = null)
     {
         $this->defaultFields = $this->getArrayableItems($defaultFields);
         $this->allowedFields = $this->getArrayableItems($allowedFields);
         if ($this->allowedFields == [])
             $this->allowedFields = $this->defaultFields;
 
-        // allow structure to be specified as either array or stdClass
+        // Allow structure to be specified as either array or stdClass
         if ($options instanceof stdClass)
             $options = (array) $options;
 
-        // convert default structure array values to a stdClass object
+        // Convert default structure array values to a stdClass object
         $this->options = (object) array_merge(self::DEFAULT_OPTIONS, $options);
 
         // Assign sqlEscapeStringFn
-        if ($sqlEscapeStringFn)
-            $this->sqlEscapeStringFn = $sqlEscapeStringFn;
-        else
-            // Default closure raises an error if called
-            $this->sqlEscapeStringFn = function($s) {
-                throw new Exception('ERROR: sqlEscapeString function not specified - suggest using: "$pdo->quote", "mysqli_real_escape_string", "esc_sql", etc');
-            };
+        $this->setSqlEscapeStringFn($sqlEscapeStringFn);
+
+        // Parse the search string
+        $this->parse($searchString);
     }
 
 
@@ -131,9 +129,20 @@ class SmartSearch
 
 
     /**
+     * Assign the SQL Escape String function
+     *
+     * @param Closure  $sqlEscapeStringFn
+     * @return void
+     */
+    public function setSqlEscapeStringFn($sqlEscapeStringFn) {
+        $this->sqlEscapeStringFn = $sqlEscapeStringFn;
+    }
+
+
+    /**
      * Parse the specified search string (into a filterOpsArray for later use)
      *
-     * @var string $searchString
+     * @param  string $searchString
      * @return void
      */
     public function parse($searchString = '') {
@@ -142,14 +151,14 @@ class SmartSearch
         $this->filterOpsArray = [];
         $this->errors = [];
 
-        // split search string into phrases - taking quotation marks into account - ref: https://stackoverflow.com/questions/2817646/javascript-split-string-on-space-or-on-quotes-to-array
+        // Split search string into phrases - taking quotation marks into account - ref: https://stackoverflow.com/questions/2817646/javascript-split-string-on-space-or-on-quotes-to-array
         $search_count = preg_match_all('/-{0,1}([a-z0-9|,_]+:){0,1}"[^"]+"|[^ ]+|\|/i', $this->searchString, $search_phrases);
         if ($search_count > 0)
             $search_phrases = $search_phrases[0];
         else
             $search_phrases = [];
 
-        // split phrases into "AND" groups (between "|" / "OR" operators)
+        // Split phrases into "AND" groups (between "|" / "OR" operators)
         // ie: searchString: 'cristian week | rolf taree'  -->  means: OR( AND(cristian,week), AND(rolf,taree) )  -->  and_groups_phrases = [ ['cristian','week'], ['rolf','taree'] ]
         $and_groups_phrases = [[]];
         foreach ($search_phrases as $phrase) {
@@ -159,7 +168,7 @@ class SmartSearch
                 $and_groups_phrases[count($and_groups_phrases)-1][] = $phrase;
         }
 
-        // decode phrase arrays into filter operations arrays
+        // Decode phrase arrays into filter operations arrays
         $and_groups_filter_ops = array_map(function($and_phrases) {
             $and_array = array_map(function($fullPhrase) {
                 $phrase = $fullPhrase;
@@ -299,6 +308,13 @@ class SmartSearch
             $filter_operations_array = $this->filterOpsArray;
 
         $sqlEscapeStringFn = $this->sqlEscapeStringFn;  // local reference
+
+        // Throw error if no escape function specified (to protection against SQL injection attacks).
+        // Note: If you really want to create an (unsafe) unescaped search string, you can provide an escape-function-closure that simply returns the unmodified string.
+        if (!$sqlEscapeStringFn) 
+            throw new Exception('ERROR: sqlEscapeString function not specified - suggest using: "$pdo->quote", "mysqli_real_escape_string", "esc_sql", etc');
+
+        // Split the current filter operation function and its parameters
         $fn = array_shift($filter_operations_array);
         $params = $filter_operations_array;
 

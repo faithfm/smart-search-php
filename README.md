@@ -1,180 +1,131 @@
 # smart-search-php
 
-Search/filter using simple Google-style search strings to perform complex filter operations.
+Simple (yet powerful) PHP search/filter providing unified results in multiple contexts:
 
-(PHP backend equivalent of "smart-search-filter" JS library)
+* MySQL/other databases (ie: "where" clause builder)
+* PHP arrays
+* Laravel Collections
+* Laravel Models
+* Laravel Nova Resources
+
+Simple Google-style search strings perform complex filter operations across multiple fields.
+
+(PHP backend equivalent of [`miking/smart-search-filter`](https://github.com/miking7/smart-search-filter) javascript library JS library)
+
+## Screenshot:
+
+![smart-search-01.jpg](docs/smart-search-01.jpg)
 
 ## Installation:
 
-Add this library to your project's `composer.json` file:
-
-```json
-{
-    "require": {
-        ...
-        "faithfm/smart-search-php": "^1.0"
-    }
-    ...
-
-    "repositories": {
-        "smart-search-php": {
-            "type": "vcs",
-            "url": "https://github.com/faithfm/smart-search-php"
-        }
-    }
-}
-```
-
-...then install using the following commands:
+Require this package in the `composer.json` of your project.
 
 ```bash
-composer update faithfm/smart-search-php
+composer require faithfm/smart-search-php
 ```
 
-## Support for whereNot():
+> Note: an [additional dependency](docs/wherenot-dependency.md) must be manually installed for **Laravel** Models & Nova Resources.  (Applies to Laravel <= 8.x)
 
-Note: If using Laravel 8 (vs Laravel >=9), support for the **whereNot()** function needs to be provided using the following package: https://github.com/protonemedia/laravel-eloquent-where-not.
+## Usage Examples:
 
-```bash
-composer require protonemedia/laravel-eloquent-where-not
-```
+Start by creating an instance of `SmartSearch` with the **search string**, and a list of **default search fields**:
 
-...and register the macro as described in their [installation instructions ](https://github.com/protonemedia/laravel-eloquent-where-not#installation).
-
-## Basic Usage Examples:
-
-The examples below demonstrate:
-
-* How to initialise the filter class
-* Debug info - show any parsing errors, and a description of the filter operations
-* `getSqlFilter()` - SQL where-clause-based database filtering
-* `getBuilderFilter` - Laravel Builder-based database filtering
-* `filterArray()` - array-based filtering
-* `filterCollection()` - Laravel Collection-based filtering
-
-Examples:
 ```php
 use FaithFM\SmartSearch\SmartSearch;
 
-# Sample search string:
-$searchPhrase = 'tags:connecting series:"tassie encounters" -health';
-#   The 'tags' field contains the word 'connecting'
-#   The 'series' field contains the phrase 'tassie encounters'
-#   ...and NO fields contain the word 'health'
+$search = 'optus 320 location:stock -F2701';
+$smartSearch = new SmartSearch($search, 'asset_id|location|type|make|model|identifier');
+```
+The parsed search-string can now be used to perform filtering in one or more contexts:
 
-# Initialise the filter and parse the search phrase
-$sqlEscapeStringFn = fn($str) => DB::connection()->getPdo()->quote($str);  // If you use SQL-based filtering (below), you need to provide access to your relevant SQL-injection-safe function - ie: mysqli_real_escape_string() / PDO::quote()
-$smartSearch = new SmartSearch('file|series|content|guests|tags', '', [], $sqlEscapeStringFn);
-$smartSearch->parse($search);
- 
-# Debug info
-var_dump($smartSearch->errors);
-var_dump($smartSearch->getFilterOpsDescription());
+* Context 1 - [PHP Array](docs/c1-arrays.md) filtering:
 
-# Example for SQL-based filtering:
-$whereClause = $smartSearch->getSqlFilter());
-$sql = “SELECT * FROM content WHERE ... AND “. $whereClause;
- 
-# Example for Laravel Query Builder-based filtering:
-$data = MyModel::where($smartSearch->getBuilderFilter())->get();
-
-# Example for array-based filtering:
-$items = [
-    {
-        "file": "2021-05-20 SFC.mp3",
-        "series": "Tassie Encounters",
-        "content": "Searching for Certainty: Does My Life Matter",
-        "guests": "Joe Bloggs and Fred Smith",
-        "tags": "tas live searching for certainty"
-    }, {
-        "file": "2022-01-20 SFC.mp3",
-        "series": "Tassie Encounters",
-        "content": "Searching for Certainty: Healthy Choices",
-        "guests": "Joe Bloggs and Fred Smith",
-        "tags": "tas live searching for certainty"
-    }, {
-        "file": "wdyt-XYZZ-06-03 FULL.mp3",
-        "series": "What Do You Think",
-        "content": "Friendship Under Fire",
-        "guests": "Mick Frederick",
-        "tags": "whatdoyouthink frederick"
-    }
-];
+```php 
 $filtered = $smartSearch->filterArray($items));
-
-# Example for Laravel Collection-based filtering:
-$cItems = collect($items);
-$cFiltered = $smartSearch->filterCollection($cItems));
 ```
 
-## Laravel Models
-
-Laravel models can be made made "Smart Searchable" by adding the *SmartSearchable* trait:
+* Context 2 - [Laravel Collection](docs/c2-laravel-collections.md) filtering:
 
 ```php
-# In your model...
-
-use FaithFM\SmartSearch\SmartSearchable;
-
-class MyModel extends Model
-{
-    use SmartSearchable;
-    ...
-}
+$filteredCollection = $smartSearch->filterCollection($myCollection));
 ```
 
-Your model can now be searched like this:
+* Context 3 - [SQL Database where-clause](docs/c3-sql-database.md) filtering:
 
 ```php
-MyModel()::smartSearch('joe', 'location|type')->get();
-# OR
-MyModel()::smartSearch('joe', ['location', 'type'])->get();
+$whereClause = $smartSearch->getSqlFilter());
 ```
 
-Extra attributes can be defined to provide defaults, and to allow greater control:
-
+* Context 4 - [Laravel Database Query Builder](docs/c4-laravel-db-builder.md) (DB or Model) filtering:
 ```php
-class MyModel extends Model
-{
-    use SmartSearchable;
-
-    // DEFAULT attributes to be searched
-    protected $smartSearchableInclude = ['location', 'type'];
-
-    // ALLOWED attributes to be searched
-    protected $smartSearchableAllow =   ['asset_id', 'location', 'type'];
-
-    ...
-}
+$data = DB::table('my_table')::where($smartSearch->getBuilderFilter())->get();
+// OR
+$data = MyModel::where( $smartSearch->getBuilderFilter() )->get();
 ```
 
-Your model can now be searched like this:
+* Context 5 - [Laravel Eloquent Model](docs/c5-laravel-eloquent-models.md) filtering:
 
 ```php
-MyModel()::smartSearch('joe')->get();
+MyModel::smartSearch('joe', 'location|type')->get();
 ```
 
-## Laravel Valet Resources
-
-The default search functionality for Laravel Nova resources can be augmented with SmartSearch capabilities by simply adding the `SmartSearchableNovaResource` trait to your resource:
+* Context 6 - [Laravel Nova Resource](docs/c6-laravel-nova-resources.md) filtering:  *(ie: as shown in the screenshot above)*
 
 ```php
-# In your Nova Resource...
-
-use FaithFM\SmartSearch\SmartSearchableNovaResource;
-
 class MyResource extends Resource
 {
     use SmartSearchableNovaResource;
     ...
-}
 ```
 
-The only requirement is that `SmartSearchable` trait has been added to the underlying Model.
+## Search Syntax:
 
-This trait automatically uses the Nova Resource's `$search` attribute column definitions, however these can 
-be ignored in favour of those defined by the underlying model's `$smartSearchableInclude` attribute by setting:
+The related [`miking/smart-search-filter`](https://github.com/miking7/smart-search-filter) javascript library includes [documentation](https://github.com/miking7/smart-search-filter#example) of how a simple Google-style search syntax is used to perform complex filter operations across multiple fields.
+
+Note: Used together these two libraries provide a simple, unified, yet powerful approach to front-end/back-end filtering in modern web applications.
+
+## Debug Information:
+
+Under the hood, a "filter operations" array is created when a search string is parsed.  
+The `getFilterOpsDescription()` function provides a human-readable representation showing the parsed intent of the search string, and parsing errors are also available:
 
 ```php
-    protected static $smartSearchableIgnoreNovalSearchColumns = true;
+var_dump($smartSearch->errors);
+var_dump($smartSearch->getFilterOpsDescription());
 ```
+
+## Advanced Options:
+
+The above examples have demonstrated the simple case where only two arguments are provided to the `SmartSearch` constructor, however a number of other advanced options are also available.
+
+```php
+new SmartSearch($searchString, $defaultFields = "", $allowedFields = "", $options = [], Closure $sqlEscapeStringFn = null)
+```
+
+Notes:
+
+* `$allowedFields` are the same as `$defaultFields` if not specified explicitly.
+
+* Fields lists can be specified in a many different ways:
+
+```php
+$defaultFields = 'location,type';       // comma-separated
+$defaultFields = 'location, type';      // comma-separated (with spaces)
+$defaultFields = 'location|type';       // pipe-separated
+$defaultFields = ['location', 'type'];  // array format
+//... and pretty much anything else that can be cast to an array (of strings)
+```
+
+* The `$options` parameter accepts an associative array or StdClass object and allows things like case sensitivity and sql wildcard characters to be defined.  Default options are:
+
+```php
+const DEFAULT_OPTIONS = [
+    'caseSensitive' => false,
+    'sqlWildcard' => '%',
+    'sqlWildcardSingleChar' => '_',
+];
+```
+
+> Note: all filters are currently case-insensitive.  The `caseSensitive` option does not currently work.
+
+* The `$sqlEscapeStringFn` can be specified in the constructor instead of calling `setSqlEscapeStringFn()` later.
