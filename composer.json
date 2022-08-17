@@ -9,13 +9,18 @@
         "package"
     ],
     "license": "GPL-3.0-or-later",
-    "authors": [{
+    "authors": [
+        {
             "name": "Michael Engelbrecht",
             "email": "michaelndani@gmail.com"
+        },
+        {
+            "name": "Lidia Ordonez",
+            "email": "lidiaordonez18@gmail.com"
         }
     ],
     "require": {
-        "php": "^7.2"
+        "php": "^7.2|^8.0"
     },
     "autoload": {
         "psr-4": {
