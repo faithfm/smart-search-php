@@ -300,9 +300,10 @@ class SmartSearch
      * Return SQL where-clause filter from filterOpsArray
      *
      * @var string|null $filter_operations_array    (not normally specified except when called recursively)
+     * @var string $prefix                          ('WHERE'/'AND'/'' prefix to be inserted when filter is non-empty)
      * @return string
      */
-    public function getSqlFilter($filter_operations_array = null) {
+    public function getSqlFilter($filter_operations_array = null, $prefix = 'WHERE') {
         # This function is called recursively.  Start with $this->filterOpsArray if null
         if (is_null($filter_operations_array))
             $filter_operations_array = $this->filterOpsArray;
@@ -311,17 +312,21 @@ class SmartSearch
 
         // Throw error if no escape function specified (to protection against SQL injection attacks).
         // Note: If you really want to create an (unsafe) unescaped search string, you can provide an escape-function-closure that simply returns the unmodified string.
-        if (!$sqlEscapeStringFn) 
+        if (!$sqlEscapeStringFn)
             throw new Exception('ERROR: sqlEscapeString function not specified - suggest using: "$pdo->quote", "mysqli_real_escape_string", "esc_sql", etc');
 
         // Split the current filter operation function and its parameters
         $fn = array_shift($filter_operations_array);
         $params = $filter_operations_array;
 
+        // return empty where-clause when no filter-operations
+        if (!$params)
+            return "";
+
         $fns = [
             'AND' => function($params) {
                 $paramsDescriptions = array_map(
-                    fn($param) => static::indent($this->getSqlFilter($param)),
+                    fn($param) => static::indent($this->getSqlFilter($param, '')),
                     $params
                 );
                 $indented = join("\n) AND (\n", $paramsDescriptions);
@@ -329,7 +334,7 @@ class SmartSearch
             },
             'OR' => function($params) {
                 $paramsDescriptions = array_map(
-                    fn($param) => static::indent($this->getSqlFilter($param)),
+                    fn($param) => static::indent($this->getSqlFilter($param, '')),
                     $params
                 );
                 $indented = join("\n) OR (\n", $paramsDescriptions);
@@ -337,7 +342,7 @@ class SmartSearch
             },
             'NOT' => function($params) {
                 $param = $params[0];
-                $unindented = $this->getSqlFilter($param);
+                $unindented = $this->getSqlFilter($param, '');
                 return "NOT( $unindented )";
             },
             'MATCH' => function($params) use ($sqlEscapeStringFn) {
@@ -364,7 +369,9 @@ class SmartSearch
                 die("INVALID CODE");
             }
         ];
-        return ($fns[$fn] ?? $fns['default'])($params);  // call the appropriate mapped function
+        $whereClause = ($fns[$fn] ?? $fns['default'])($params);         // call the appropriate mapped function
+        $whereClause = ($prefix ? " $prefix " : "") . $whereClause;     // insert the relevant prefix
+        return $whereClause;
     }
 
 
