@@ -25,9 +25,9 @@ class SmartSearch
     /**
      * Any errors encountered during parsing
      *
-     * @var string
+     * @var string[]
      */
-    public $errors;
+    public $errors = [];
 
     /**
      * List of fields to be search by default (when no fields are specified in the search string)
@@ -134,7 +134,8 @@ class SmartSearch
      * @param Closure  $sqlEscapeStringFn
      * @return void
      */
-    public function setSqlEscapeStringFn($sqlEscapeStringFn) {
+    public function setSqlEscapeStringFn($sqlEscapeStringFn)
+    {
         $this->sqlEscapeStringFn = $sqlEscapeStringFn;
     }
 
@@ -145,7 +146,8 @@ class SmartSearch
      * @param  string $searchString
      * @return void
      */
-    public function parse($searchString = '') {
+    public function parse($searchString = '')
+    {
 
         $this->searchString = $searchString ?? '';
         $this->filterOpsArray = [];
@@ -165,12 +167,12 @@ class SmartSearch
             if ($phrase == "|")
                 $and_groups_phrases[] = [];  // start new group
             else
-                $and_groups_phrases[count($and_groups_phrases)-1][] = $phrase;
+                $and_groups_phrases[count($and_groups_phrases) - 1][] = $phrase;
         }
 
         // Decode phrase arrays into filter operations arrays
-        $and_groups_filter_ops = array_map(function($and_phrases) {
-            $and_array = array_map(function($fullPhrase) {
+        $and_groups_filter_ops = array_map(function ($and_phrases) {
+            $and_array = array_map(function ($fullPhrase) {
                 $phrase = $fullPhrase;
                 $invert = false;
                 if ($phrase[0] == '-') {            // starts-with '-'
@@ -181,7 +183,7 @@ class SmartSearch
                 $match_count = preg_match_all('/([a-z0-9|,_]+):/i', $phrase, $match);
                 if ($match_count > 0) {
                     $searchFields = $match[1][0];
-                    $phrase = substr($phrase, strlen($searchFields)+1);
+                    $phrase = substr($phrase, strlen($searchFields) + 1);
                     if (!is_array($searchFields)) {
                         $searchFields = explode('|', str_replace(',', '|', $searchFields));    // split fields by '|' or ','
                         $searchFields = $this->validateSearchFields($searchFields);
@@ -190,7 +192,6 @@ class SmartSearch
                             return [];
                         }
                     }
-
                 }
                 $phrase = str_replace('"', '', $phrase);    // remove quotation marks
                 $phrase = str_replace('|', '', $phrase);    // remove "|" occurances (usually only if errors in syntax)
@@ -203,18 +204,16 @@ class SmartSearch
                     $main_filter_ops = ["NOT", $main_filter_ops];    // invert if required
 
                 return $main_filter_ops;
-
             }, $and_phrases);
 
-            $and_array = array_filter($and_array, fn($filter_op) => $filter_op<>[] );   // remove blank search terms
+            $and_array = array_filter($and_array, fn ($filter_op) => $filter_op <> []);   // remove blank search terms
             if ($and_array <> [])
                 return ["AND", ...$and_array];
             else
                 return [];
-
         }, $and_groups_phrases);
 
-        $and_groups_filter_ops = array_filter($and_groups_filter_ops, fn($filter_op) => $filter_op<>[] );   // remove blank search terms
+        $and_groups_filter_ops = array_filter($and_groups_filter_ops, fn ($filter_op) => $filter_op <> []);   // remove blank search terms
         $this->filterOpsArray = ["OR", ...$and_groups_filter_ops];
     }
 
@@ -225,12 +224,13 @@ class SmartSearch
      * @var array $searchFields
      * @return array
      */
-    protected function validateSearchFields($searchFields) {
-        return array_filter($searchFields, function($field) {
+    protected function validateSearchFields($searchFields)
+    {
+        return array_filter($searchFields, function ($field) {
             if (in_array($field, $this->allowedFields))
                 return true;
             else {
-                $this->addError("Field '$field' not found in list of allowed fields (". join(", ", $this->allowedFields) .")");
+                $this->addError("Field '$field' not found in list of allowed fields (" . join(", ", $this->allowedFields) . ")");
                 return false;
             }
         });
@@ -243,7 +243,8 @@ class SmartSearch
      * @var string $msg
      * @return  void
      */
-    protected function addError(string $msg) {
+    protected function addError(string $msg)
+    {
         $this->errors[] = $msg;
     }
 
@@ -254,7 +255,8 @@ class SmartSearch
      * @var string|null $filter_operations_array    (not normally specified except when called recursively)
      * @return string
      */
-    public function getFilterOpsDescription($filter_operations_array = null) {
+    public function getFilterOpsDescription($filter_operations_array = null)
+    {
         # This function is called recursively.  Start with $this->filterOpsArray if null
         if (is_null($filter_operations_array))
             $filter_operations_array = $this->filterOpsArray;
@@ -262,33 +264,33 @@ class SmartSearch
         $fn = array_shift($filter_operations_array);
         $params = $filter_operations_array;
         $fns = [
-            'AND' => function($params) {
+            'AND' => function ($params) {
                 $paramsDescriptions = array_map(
-                    fn($param) => $this->getFilterOpsDescription($param),
+                    fn ($param) => $this->getFilterOpsDescription($param),
                     $params
                 );
                 $indented = static::indent(join(",\n", $paramsDescriptions));
                 return "AND(\n$indented )";
             },
-            'OR' => function($params) {
+            'OR' => function ($params) {
                 $paramsDescriptions = array_map(
-                    fn($param) => $this->getFilterOpsDescription($param),
+                    fn ($param) => $this->getFilterOpsDescription($param),
                     $params
                 );
                 $indented = static::indent(join(",\n", $paramsDescriptions));
                 return "OR(\n$indented )";
             },
-            'NOT' => function($params) {
+            'NOT' => function ($params) {
                 $param = $params[0];
                 $unindented = $this->getFilterOpsDescription($param);
                 return "NOT( $unindented )";
             },
-            'MATCH' => function($params) {
+            'MATCH' => function ($params) {
                 [$fields, $glob] = $params;
                 $joined = join('|', $fields);
                 return "MATCH(\"$joined\", \"$glob\")";
             },
-            'default' => function() {
+            'default' => function () {
                 die("INVALID CODE");
             }
         ];
@@ -303,7 +305,8 @@ class SmartSearch
      * @var string $prefix                          ('WHERE'/'AND'/'' prefix to be inserted when filter is non-empty)
      * @return string
      */
-    public function getSqlFilter($filter_operations_array = null, $prefix = 'WHERE') {
+    public function getSqlFilter($filter_operations_array = null, $prefix = 'WHERE')
+    {
         # This function is called recursively.  Start with $this->filterOpsArray if null
         if (is_null($filter_operations_array))
             $filter_operations_array = $this->filterOpsArray;
@@ -324,28 +327,28 @@ class SmartSearch
             return "";
 
         $fns = [
-            'AND' => function($params) {
+            'AND' => function ($params) {
                 $paramsDescriptions = array_map(
-                    fn($param) => static::indent($this->getSqlFilter($param, '')),
+                    fn ($param) => static::indent($this->getSqlFilter($param, '')),
                     $params
                 );
                 $indented = join("\n) AND (\n", $paramsDescriptions);
                 return "(\n$indented\n)";
             },
-            'OR' => function($params) {
+            'OR' => function ($params) {
                 $paramsDescriptions = array_map(
-                    fn($param) => static::indent($this->getSqlFilter($param, '')),
+                    fn ($param) => static::indent($this->getSqlFilter($param, '')),
                     $params
                 );
                 $indented = join("\n) OR (\n", $paramsDescriptions);
                 return "\n(\n$indented\n)";
             },
-            'NOT' => function($params) {
+            'NOT' => function ($params) {
                 $param = $params[0];
                 $unindented = $this->getSqlFilter($param, '');
                 return "NOT( $unindented )";
             },
-            'MATCH' => function($params) use ($sqlEscapeStringFn) {
+            'MATCH' => function ($params) use ($sqlEscapeStringFn) {
                 [$fields, $glob] = $params;
 
                 // if no wildcards in search term, assume we're searching for the term anywhere in the field
@@ -360,12 +363,12 @@ class SmartSearch
                 $safeGlob = $sqlEscapeStringFn($glob);
 
                 $fstrings = array_map(
-                    fn($field) => "($field like $safeGlob)",
+                    fn ($field) => "($field like $safeGlob)",
                     $fields
                 );
                 return join(' OR ', $fstrings);
             },
-            'default' => function() {
+            'default' => function () {
                 die("INVALID CODE");
             }
         ];
@@ -381,7 +384,8 @@ class SmartSearch
      * @var string|null $filter_operations_array    (not normally specified except when called recursively)
      * @return closure
      */
-    public function getBuilderFilter($filter_operations_array = null) {
+    public function getBuilderFilter($filter_operations_array = null)
+    {
         # This function is called recursively.  Start with $this->filterOpsArray if null
         if (is_null($filter_operations_array))
             $filter_operations_array = $this->filterOpsArray;
@@ -390,28 +394,28 @@ class SmartSearch
         $params = $filter_operations_array;
 
         $fns = [
-            'AND' => function($params) {
+            'AND' => function ($params) {
                 $closure = function ($query) use ($params) {
                     foreach ($params as $param)
                         $query->where($this->getBuilderFilter($param));
                 };
                 return $closure;
             },
-            'OR' => function($params) {
+            'OR' => function ($params) {
                 $closure = function ($query) use ($params) {
                     foreach ($params as $param)
                         $query->orWhere($this->getBuilderFilter($param));
                 };
                 return $closure;
             },
-            'NOT' => function($params) {
+            'NOT' => function ($params) {
                 $param = $params[0];
                 $closure = function ($query) use ($param) {
                     $query->whereNot($this->getBuilderFilter($param));
                 };
                 return $closure;
             },
-            'MATCH' => function($params) {
+            'MATCH' => function ($params) {
                 [$fields, $glob] = $params;
 
                 // if no wildcards in search term, assume we're searching for the term anywhere in the field
@@ -432,7 +436,7 @@ class SmartSearch
 
                 return $closure;
             },
-            'default' => function() {
+            'default' => function () {
                 die("INVALID CODE");
             }
         ];
@@ -446,7 +450,8 @@ class SmartSearch
      * @var array $items
      * @return array
      */
-    function filterArray($items) {
+    function filterArray($items)
+    {
         return array_filter($items, function ($item) {
             return $this->testItem($item);
         });
@@ -458,7 +463,8 @@ class SmartSearch
      * @var Collection $items
      * @return Collection
      */
-    function filterCollection($items) {
+    function filterCollection($items)
+    {
         return $items->filter(function ($item) {
             return $this->testItem($item);
         });
@@ -471,7 +477,8 @@ class SmartSearch
      * @var string|null $filter_operations_array    (not normally specified except when called recursively)
      * @return closure
      */
-    public function testItem($item, $filter_operations_array = null) {
+    public function testItem($item, $filter_operations_array = null)
+    {
         # This function is called recursively.  Start with $this->filterOpsArray if null
         if (is_null($filter_operations_array))
             $filter_operations_array = $this->filterOpsArray;
@@ -480,7 +487,7 @@ class SmartSearch
         $params = $filter_operations_array;
 
         $fns = [
-            'AND' => function($params) use ($item) {
+            'AND' => function ($params) use ($item) {
                 // result is true when no params exist
                 if (count($params) == 0)
                     return true;
@@ -492,7 +499,7 @@ class SmartSearch
                 // result is true since NO items tested false
                 return true;            // test succeeds if ALL sub-operations fail
             },
-            'OR' => function($params) use ($item) {
+            'OR' => function ($params) use ($item) {
                 // result is true when no params exist
                 if (count($params) == 0)
                     return true;
@@ -504,11 +511,11 @@ class SmartSearch
                 // result is false since NO items tested true
                 return false;          // test fails if NONE of the sub-operations succeed
             },
-            'NOT' => function($params) use ($item) {
+            'NOT' => function ($params) use ($item) {
                 $param = $params[0];
                 return !$this->testItem($item, $param);     // invert results of sub-operation
             },
-            'MATCH' => function($params) use ($item) {
+            'MATCH' => function ($params) use ($item) {
                 [$fields, $glob] = $params;
 
                 // if no wildcards in search term, assume we're searching for the term anywhere in the field
@@ -517,7 +524,7 @@ class SmartSearch
 
                 $reString = preg_replace('/[-\\^$+.()\/|[\]{}]/', '\\\\$0', $glob); // escape all regex special characters - except for '*' and '?'.  Ref: https://stackoverflow.com/questions/3561493/is-there-a-regexp-escape-function-in-javascript/3561711
                 if (static::endsWith($reString, '*'))
-                  $reString = '^' . $reString;                            // special search with "wildcard at end of word/phrase" requires the field to **start with** (vs **contain**) the specified search string.
+                    $reString = '^' . $reString;                            // special search with "wildcard at end of word/phrase" requires the field to **start with** (vs **contain**) the specified search string.
                 $reString = preg_replace('/\*/', '.*', $reString);       // convert glob '*' to regex ".*"
                 $reString = preg_replace('/\?/', '.', $reString);        // convert glob '?' to regex "."
                 foreach ($fields as $field) {
@@ -527,12 +534,12 @@ class SmartSearch
                 }
                 return false;          // test fails if NONE of the sub-operations succeed
             },
-            'default' => function() {
+            'default' => function () {
                 die("INVALID CODE");
             }
         ];
         return ($fns[$fn] ?? $fns['default'])($params);  // call the appropriate mapped function
-      }
+    }
 
 
 
@@ -543,10 +550,11 @@ class SmartSearch
      * @var string $text
      * @return string
      */
-    protected static function indent($text) {
+    protected static function indent($text)
+    {
         $lines = explode("\n", $text);
         $indented_lines = array_map(
-            fn($line) => "  $line",
+            fn ($line) => "  $line",
             $lines
         );
         return join("\n", $indented_lines);
@@ -592,5 +600,4 @@ class SmartSearch
 
         return false;
     }
-
 }

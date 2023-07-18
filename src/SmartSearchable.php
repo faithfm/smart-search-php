@@ -6,10 +6,10 @@ use FaithFM\SmartSearch\SmartSearch;
 
 /**
  * This trait allows a Laravel Model to be SmartSearchable
- * 
+ *
  * Example: MyModel()::smartSearch('joe')->get();
- * 
- * Note: The $includeAttribs parameter must be specified when calling the scope 
+ *
+ * Note: The $includeAttribs parameter must be specified when calling the scope
  *   unless the $smartSearchableInclude attribute has been defined for the model.
  */
 trait SmartSearchable
@@ -30,8 +30,7 @@ trait SmartSearchable
      *
      * @var array
      */
-    protected $smartSearchableAllow = [
-    ];
+    protected $smartSearchableAllow = [];
 
     /**
      * Scope a query using a SmartSearch
@@ -47,4 +46,17 @@ trait SmartSearchable
         return $query->where($smartSearch->getBuilderFilter());
     }
 
+    /**
+     * Scope a query using a SmartSearch (also returning any errors)
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return [\Illuminate\Database\Eloquent\Builder, string[] ]
+     */
+    public function scopeSmartSearchWithErrors($query, $search, $includeAttribs = null, $allowedAttribs = null, $options = [])
+    {
+        $includeAttribs = $includeAttribs ?? $this->smartSearchableInclude;
+        $allowedAttribs = $allowedAttribs ?? $this->smartSearchableAllow;
+        $smartSearch = new SmartSearch($search, $includeAttribs, $allowedAttribs, $options);
+        return [$query->where($smartSearch->getBuilderFilter()), $smartSearch->errors];
+    }
 }
