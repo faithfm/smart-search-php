@@ -359,12 +359,21 @@ class SmartSearch
                 $glob = str_replace('*', $this->options->sqlWildcard,           $glob);
                 $glob = str_replace('?', $this->options->sqlWildcardSingleChar, $glob);
 
+                // make fields SQL-safe (ie: prevent SQL injection attacks)
+                // note: safeFieldName() used instead of sqlEscapeStringFn() - for consistency with getBuilderFilter()
+                $safeFields = array_map(
+                    fn ($field) => static::safeFieldName($field),
+                    $fields
+                );
+
                 // make glob SQL-safe (ie: prevent SQL injection attacks)
                 $safeGlob = $sqlEscapeStringFn($glob);
 
+                // apply field constraints
                 $fstrings = array_map(
-                    fn ($field) => "($field like $safeGlob)",
-                    $fields
+                    // IFNULL must be used to prevent NULL values being excluded for inverted searches (ie: NOT MATCH)
+                    fn ($safeField) => "(IFNULL($safeField, '') like $safeGlob)",
+                    $safeFields
                 );
                 return join(' OR ', $fstrings);
             },
@@ -429,8 +438,14 @@ class SmartSearch
                 // apply field constraints
                 $closure = function ($query) use ($fields, $glob) {
                     $query->where(function ($query) use ($fields, $glob) {
-                        foreach ($fields as $field)
-                            $query->orWhere($field, 'like', $glob);
+                        foreach ($fields as $field) {
+                            // IFNULL must be used to prevent NULL values being excluded for inverted searches (ie: NOT MATCH)
+                            //   * This necessitates a raw query.
+                            //   * ...and there's no easy way to bind column names in raw queries
+                            //   * ....so field names must be SQL-safe
+                            $safeField = static::safeFieldName($field);
+                            $query->orWhereRaw("IFNULL($safeField, '') LIKE ?", [$glob]);
+                        }
                     });
                 };
 
@@ -443,6 +458,18 @@ class SmartSearch
         return ($fns[$fn] ?? $fns['default'])($params);  // call the appropriate mapped function
     }
 
+    /**
+     * Return a 'safe' field/column name for an SQL query
+     *   - anything but alphanumeric characters and underscores is stripped
+     *   - ie: to prevent SQL injection attacks
+     *
+     * @var string $fieldName
+     * @return string
+     */
+    protected static function safeFieldName($fieldName) {
+        // Remove all characters that are not alphanumeric or underscores
+        return preg_replace('/[^a-zA-Z0-9_]/', '', $fieldName);
+    }
 
     /**
      * Return a filtered array (test each item against filterOpsArray)
