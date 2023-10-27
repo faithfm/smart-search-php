@@ -3,6 +3,15 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## 2.4.0 - 2023-10-27
+
+* Bugfix: inverted queries should not exclude NULLs
+* Implement 'explicitCaseInsensitive' option (for SQL engines like Athena/Presto having case-sensitive collations)
+
+## 2.3.0 - 2023-07-18
+
+* Add 'smartSearchWithErrors()' scope to provide access to errors in SmartSearchable Trait
+
 ## 2.2.0 - 2022-08-17
 
 * Add prefix support for getSqlFilter()

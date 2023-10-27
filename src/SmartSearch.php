@@ -56,7 +56,7 @@ class SmartSearch
      * @var array
      */
     const DEFAULT_OPTIONS = [
-        'caseSensitive' => false,       // Note: all filters are currently case-insensitive.  Enabling this option does not currently work.
+        'explicitCaseInsensitive' => false,       // Wrap SQL "LIKE" statements with "LOWER()" function when set.  (Used with SQL engines like Athena/Presto having case-sensitive collations)
         'sqlWildcard' => '%',
         'sqlWildcardSingleChar' => '_',
     ];
@@ -372,7 +372,10 @@ class SmartSearch
                 // apply field constraints
                 $fstrings = array_map(
                     // IFNULL must be used to prevent NULL values being excluded for inverted searches (ie: NOT MATCH)
-                    fn ($safeField) => "(IFNULL($safeField, '') like $safeGlob)",
+                    // if explicit-case-insensitivy is required, than LIKE are wrapped with the LOWER() function
+                    fn ($safeField) => $this->options->explicitCaseInsensitive ?
+                                    "(LOWER(IFNULL($safeField, '')) like LOWER($safeGlob))" :   // wrapped LIKE statement
+                                    "(IFNULL($safeField, '') like $safeGlob)",                  // simple LIKE statement
                     $safeFields
                 );
                 return join(' OR ', $fstrings);
