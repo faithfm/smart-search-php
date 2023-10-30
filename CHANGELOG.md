@@ -3,6 +3,10 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## 2.4.1 - 2023-10-30
+
+* Bugfix: use COALESCE vs ISNULL (ie: generic SQL vs MYSQL - including Athena/Presto compatibility)
+
 ## 2.4.0 - 2023-10-27
 
 * Bugfix: inverted queries should not exclude NULLs
