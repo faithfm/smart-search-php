@@ -1,6 +1,7 @@
 <?php
 
 namespace FaithFM\SmartSearch;
+use Illuminate\Contracts\Database\Eloquent\Builder;
 use Laravel\Nova\Query\Search\Column;
 
 /**
@@ -20,13 +21,8 @@ trait SmartSearchableNovaResource
 
     /**
      * Override default Nova search with our SmartSearch library
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @param  string  $search
-     * @param  array  $searchColumns
-     * @return \Illuminate\Database\Eloquent\Builder
      */
-    protected static function initializeSearch($query, $search, $searchColumns)
+    protected static function initializeSearch(Builder $query, string $search, array $searchColumns): Builder
     {
         // Ensure that any instances of Nova's special "Columns" instance are converted back to field names (string) )
         foreach ($searchColumns as &$searchColumn) {
